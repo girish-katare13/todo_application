@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        .input-section {
+            margin-bottom: 20px;
+        }
+        .input-section label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .input-section input, .input-section textarea {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .task-section {
+            margin-bottom: 20px;
+        }
+        .task-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            position: relative;
+        }
+        .task-item.completed {
+            background-color: #e1f7e1; 
+        }
+        .task-item.completed::before {
+            content: '\2713'; 
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            color: green;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-section">
+            <h2>Add a New Task</h2>
+            <form id="task-form">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" required>
+                
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" required></textarea>
+                
+                <button type="submit">Add Task</button>
+            </form>
+        </div>
+        
+        <div class="task-section">
+            <h2>Task List</h2>
+            <div id="task-list">
+                <!-- Tasks will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const title = formData.get('title');
+            const description = formData.get('description');
+            
+            // Send a POST request to create a new task
+            fetch('/tasks/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title, description }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear the form
+                event.target.reset();
+                // Add the new task to the task list
+                displayTask(data);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        // Function to display a task
+        function displayTask(task) {
+            const taskList = document.getElementById('task-list');
+            const taskElement = document.createElement('div');
+            taskElement.classList.add('task-item');
+            if (task.completed) {
+                taskElement.classList.add('completed');
+            }
+            taskElement.innerHTML = `
+                <input type="checkbox" id="task-${task.id}" onchange="markTaskCompleted(${task.id}, this)" ${task.completed ? 'checked' : ''}>
+                <label for="task-${task.id}"><strong>${task.title}</strong>: ${task.description}</label>
+                <button onclick="deleteTask(${task.id})">Delete</button>
+            `;
+            taskList.appendChild(taskElement);
+        }
+
+        function fetchAndDisplayTasks() {
+            fetch('/tasks/')
+                .then(response => response.json())
+                .then(tasks => {
+                    const taskList = document.getElementById('task-list');
+                    taskList.innerHTML = ''; // Clear existing tasks
+                    tasks.forEach(task => {
+                        displayTask(task);
+                    });
+                })
+                .catch(error => console.error('Error fetching tasks:', error));
+        }
+
+        fetchAndDisplayTasks();
+        
+        document.getElementById('task-form').addEventListener('submit', handleFormSubmit);
+
+        function markTaskCompleted(taskId, checkbox) {
+            fetch(`/tasks/${taskId}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ completed: checkbox.checked }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    fetchAndDisplayTasks();
+                } else {
+                    throw new Error('Failed to mark task as completed');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function deleteTask(taskId) {
+            fetch(`/tasks/${taskId}/`, {
+                method: 'DELETE',
+            })
+            .then(response => {
+                if (response.ok) {
+                    fetchAndDisplayTasks();
+                } else {
+                    throw new Error('Failed to delete task');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
