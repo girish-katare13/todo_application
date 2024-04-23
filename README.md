@@ -17,14 +17,15 @@ Instructions to Run the Project:
    pipenv
 
 3. Install depandancies:
-   pipenv install (this will install all depandancies for this project)
+   (this will install all depandancies for this project)
+   pipenv install
 
-4. Navigate to the project directory:
+5. Navigate to the project directory:
    cd todo_app
 
-5. Make migrations to set up the database:
+6. Make migrations to set up the database:
    python manage.py makemigrations
    python manage.py migrate
 
-6. Start the Django development server:
+7. Start the Django development server:
    python manage.py runserver
